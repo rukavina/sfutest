@@ -1,7 +1,6 @@
 package signal
 
 import (
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,8 +9,6 @@ import (
 
 // HTTPSDPServer starts a HTTP Server that consumes SDPs
 func HTTPSDPServer(port int, staticDir string) (offerChan, answerChan chan string) {
-	flag.Parse()
-
 	offerChan = make(chan string)
 	answerChan = make(chan string)
 	http.HandleFunc("/sdp", func(w http.ResponseWriter, r *http.Request) {
