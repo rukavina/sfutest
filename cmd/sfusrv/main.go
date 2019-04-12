@@ -77,6 +77,7 @@ func main() {
 	// Set a handler for when a new remote track starts, this just distributes all our packets
 	// to connected peers
 	publishPC.OnTrack(func(remoteTrack *webrtc.Track, receiver *webrtc.RTPReceiver) {
+		log.Printf("New OnTrack event received\n")
 		// Send a PLI on an interval so that the publisher is pushing a keyframe every rtcpPLIInterval
 		// This can be less wasteful by processing incoming RTCP events, then we would emit a NACK/PLI when a viewer requests it
 		go func() {
@@ -114,14 +115,10 @@ func main() {
 	log.Println("Waiting for new local track")
 	localTrack := <-localTrackChan
 	for {
-		fmt.Println("")
-		fmt.Println("Curl an base64 SDP to start sendonly peer connection")
-
+		fmt.Println("New local track obtained")
 		recvOnlyOffer := webrtc.SessionDescription{}
-
 		log.Println("Waiting for new receive only sdp offer")
 		signal.Decode(<-offerChan, &recvOnlyOffer)
-
 		// Create a new PeerConnection
 		viewerPC, err := api.NewPeerConnection(peerConnectionConfig)
 		if err != nil {
