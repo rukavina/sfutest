@@ -16,10 +16,16 @@ window.createSession = isPublisher => {
     if (event.candidate === null) {
       let sdp = btoa(JSON.stringify(pc.localDescription))
       document.getElementById('localSessionDescription').value = sdp
-      postSDP(sdp).then(response => {
-        console.log(response)
-        response.text().then(text => document.getElementById('remoteSessionDescription').value = text);        
+      postSDP(sdp, isPublisher).then(res => res.json())
+      .then(response => {
+        console.log("response:",response)
+        if (response.success){
+          document.getElementById('remoteSessionDescription').value = response.sdp  
+        }else{
+          alert("Error connecting: " + response.error)
+        }
       })
+      .catch(error => console.error('Error:', error));
     }
   }
 
@@ -32,7 +38,7 @@ window.createSession = isPublisher => {
           .catch(log)
       }).catch(log)
   } else {
-    pc.addTransceiver('video', {'direction': 'recvonly'})
+    pc.addTransceiver('video', { 'direction': 'recvonly' })
     pc.createOffer()
       .then(d => pc.setLocalDescription(d))
       .catch(log)
@@ -67,10 +73,16 @@ window.createSession = isPublisher => {
 }
 
 
-function postSDP(sdp, url = `http://localhost:8080/sdp`) {
-  // Default options are marked with *
-    return fetch(url, {
-        method: 'POST',
-        body: sdp, // body data type must match "Content-Type" header
-    })
+function postSDP(sdp, isPublisher, url = `http://localhost:8080/sdp`) {
+  let req = {
+    'sdp': sdp,
+    'mode': isPublisher ? 'publisher' : 'viewer',
+  }
+  return fetch(url, {
+    method: 'POST',
+    body: JSON.stringify(req),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
 }
