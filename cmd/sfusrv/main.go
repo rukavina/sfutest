@@ -30,10 +30,12 @@ func main() {
 	m := webrtc.MediaEngine{}
 	m.RegisterCodec(webrtc.NewRTPVP8Codec(webrtc.DefaultPayloadTypeVP8, 90000))
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(m))
-
-	sfuEngine := sfu.NewEngine(api, rtcpPLIInterval, peerConnectionConfig)
-
-	sfu.NewServer(sfuEngine, "../../static")
+	eng := sfu.NewEngine(api, rtcpPLIInterval, peerConnectionConfig)
+	s := &sfu.Server{Engine: eng}
+	//sdp endpoint
+	http.HandleFunc("/sdp", s.HandleSDP)
+	//server static files
+	http.Handle("/", http.FileServer(http.Dir("../../static")))
 
 	log.Printf("SFU server up and running, open UI @ http://localhost:%d\n\n", *port)
 

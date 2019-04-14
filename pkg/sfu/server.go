@@ -8,13 +8,6 @@ import (
 	"github.com/pion/webrtc/v2"
 )
 
-//Server is http server and engine wrapper
-type Server struct {
-	port      int
-	staticDir string
-	engine    *Engine
-}
-
 //request modes consts
 const (
 	RequestModePublisher = "publisher"
@@ -34,52 +27,43 @@ type SDPResponse struct {
 	Error   string `json:"error"`
 }
 
-// NewServer starts a HTTP Server that consumes SDPs
-func NewServer(engine *Engine, staticDir string) *Server {
-	s := &Server{
-		engine:    engine,
-		staticDir: staticDir,
+//Server is http server and engine wrapper
+type Server struct {
+	Engine *Engine
+}
+
+//HandleSDP is sdp endpoint to receive publisher and viewer sdp offers and return answer
+func (s *Server) HandleSDP(w http.ResponseWriter, r *http.Request) {
+	body, _ := ioutil.ReadAll(r.Body)
+	var req SDPRequest
+	err := json.Unmarshal(body, &req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	offer := webrtc.SessionDescription{}
+	SDPDecode(req.SDP, &offer)
+	var answer webrtc.SessionDescription
+	if req.Mode == RequestModePublisher {
+		answer, err = s.Engine.createPublisherPC(offer)
+	} else {
+		answer, err = s.Engine.createViewerPC(offer)
 	}
 
-	http.HandleFunc("/sdp", func(w http.ResponseWriter, r *http.Request) {
-		body, _ := ioutil.ReadAll(r.Body)
-		var req SDPRequest
-		err := json.Unmarshal(body, &req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		offer := webrtc.SessionDescription{}
-		SDPDecode(req.SDP, &offer)
-		var answer webrtc.SessionDescription
-		if req.Mode == RequestModePublisher {
-			answer, err = s.engine.createPublisherPC(offer)
-		} else {
-			answer, err = s.engine.createViewerPC(offer)
-		}
-
-		res := SDPResponse{
-			SDP:     SDPEncode(&answer),
-			Success: err == nil,
-		}
-		if err != nil {
-			res.Error = err.Error()
-		}
-
-		js, err := json.Marshal(res)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(js)
-	})
-
-	//server static files
-	if staticDir != "" {
-		fs := http.FileServer(http.Dir(staticDir))
-		http.Handle("/", fs)
+	res := SDPResponse{
+		SDP:     SDPEncode(&answer),
+		Success: err == nil,
 	}
-	return s
+	if err != nil {
+		res.Error = err.Error()
+	}
+
+	js, err := json.Marshal(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
 }
