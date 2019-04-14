@@ -1,4 +1,4 @@
-package signal
+package sfu
 
 import (
 	"math/rand"
