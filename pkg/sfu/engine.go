@@ -31,7 +31,7 @@ func NewEngine(api *webrtc.API, rtcpPLIInterval time.Duration, pcConfig webrtc.C
 
 func (s *Engine) createPublisherPC(offer webrtc.SessionDescription) (webrtc.SessionDescription, error) {
 	answer := webrtc.SessionDescription{}
-	if s.publishPC != nil {
+	if s.publishPC != nil && s.publishPC.ConnectionState() == webrtc.PeerConnectionStateConnected {
 		return answer, fmt.Errorf("Publisher already exists")
 	}
 	// Create a new RTCPeerConnection
@@ -41,8 +41,16 @@ func (s *Engine) createPublisherPC(offer webrtc.SessionDescription) (webrtc.Sess
 		return answer, fmt.Errorf("Error creating publisher PC: %v", err)
 	}
 
+	s.publishPC.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
+		log.Printf("Publisher Peer conn. state change: %s\n", state.String())
+	})
+
+	s.publishPC.OnICEConnectionStateChange(func(state webrtc.ICEConnectionState) {
+		log.Printf("Publisher ICE conn. state change: %s\n", state.String())
+	})
+
 	// Allow us to receive 1 video track
-	if _, err = s.publishPC.AddTransceiver(webrtc.RTPCodecTypeVideo); err != nil {
+	if _, err = s.publishPC.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo); err != nil {
 		return answer, fmt.Errorf("Error adding publisher Transceiver: %v", err)
 	}
 
@@ -63,15 +71,6 @@ func (s *Engine) createPublisherPC(offer webrtc.SessionDescription) (webrtc.Sess
 	if err != nil {
 		return answer, fmt.Errorf("Error setting publisher local desc.: %v", err)
 	}
-
-	s.publishPC.OnICEConnectionStateChange(func(state webrtc.ICEConnectionState) {
-		log.Printf("Publisher ICE conn. state change: %s\n", state.String())
-		if state == webrtc.ICEConnectionStateDisconnected {
-			s.publishPC.Close()
-			s.publishPC = nil
-			s.localTrack = nil
-		}
-	})
 
 	// Set a handler for when a new remote track starts, this just distributes all our packets
 	// to connected peers
@@ -97,6 +96,10 @@ func (s *Engine) createPublisherPC(offer webrtc.SessionDescription) (webrtc.Sess
 
 		rtpBuf := make([]byte, 1400)
 		for {
+			if s.publishPC == nil || s.publishPC.ConnectionState() == webrtc.PeerConnectionStateClosed || s.publishPC.ConnectionState() == webrtc.PeerConnectionStateDisconnected {
+				break
+			}
+
 			i, err := remoteTrack.Read(rtpBuf)
 			if err != nil {
 				log.Printf("remote track read error: %v", err)

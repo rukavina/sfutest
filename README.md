@@ -12,5 +12,5 @@ cd cmd/sfusrv
 go run main.go
 ```
 
-Then in browser open http://localhost:8080 and click `Publish` to connect broadcaster first and then `Start`, and in another tab the same page and click `Join` and `Start`
-You should connect 1 broadcaster and many viewers. The limitation currently is that you need to connect 
+Then in browser open http://localhost:9090 and click `Publish a Broadcast` to connect broadcaster first, and then in another tab the same page and click `Join a Broadcast`
+You should connect 1 broadcaster and many viewers. 

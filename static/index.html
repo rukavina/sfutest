@@ -1,33 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>SFU Test with pion</title>
+  <title>Pion SFU/Broadcast Test</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
 </head>
-
 <body>
-  <div id="signalingContainer" style="display: none">
-    Browser base64 Session Description<br />
-    <textarea id="localSessionDescription" readonly="true"></textarea> <br />
 
-    Golang base64 Session Description<br />
-    <textarea id="remoteSessionDescription"></textarea> <br />
-    <button onclick="window.startSession()"> Start Session </button><br />
+<div class="jumbotron text-center">
+  <h1>SFU/Broadcast Test with pion</h1>
+  <p>One broadcaster and many viewers</p> 
+</div>
+  
+<div class="container">
+  <div class="row">
+    <div class="col-sm-8">
+      <div class="form-group" id="connectUI">
+        <label for="signalingUrl">Signaling URL</label>
+        <input type="text" class="form-control" placeholder="Enter URL" id="signalingUrl" value="http://localhost:9090/sdp">        
+        <button class="btn btn-primary" onclick="sm.broadcast()"> Publish a Broadcast </button>
+        <button class="btn btn-primary" onclick="sm.watch()"> Join a Broadcast </button>                
+      </div>
+      <video id="video" width="600" height="480" autoplay muted></video>
+    </div>
+    <div class="col-sm-4">
+      <textarea class="form-control" id="log"></textarea>
+    </div>
   </div>
-
-  <br />
-
-  Video<br />
-  <video id="video1" width="160" height="120" autoplay muted></video> <br />
-
-  <button class="createSessionButton" onclick="window.createSession(true)"> Publish a Broadcast </button>
-  <button class="createSessionButton" onclick="window.createSession(false)"> Join a Broadcast </button><br />
-
-  <br />
-
-  Logs<br />
-  <div id="logs"></div>
-  <script src="index.js"></script>
+</div>
+<script src="index.js"></script>
+<script>
+  let onConnected = function(){
+    document.getElementById("connectUI").style="display:none"
+  }
+  let sm = new SessionManager(document.getElementById('video'), document.getElementById('log'), document.getElementById('signalingUrl'), onConnected)
+</script>
 </body>
-
 </html>

@@ -24,7 +24,7 @@ const (
 )
 
 func main() {
-	port := flag.Int("port", 8080, "http server port")
+	port := flag.Int("port", 9090, "http server port")
 	flag.Parse()
 
 	m := webrtc.MediaEngine{}

@@ -16,15 +16,15 @@ const (
 
 //SDPRequest is json http request
 type SDPRequest struct {
-	SDP  string `json:"sdp"`
-	Mode string `json:"mode"`
+	SDP  webrtc.SessionDescription `json:"sdp"`
+	Mode string                    `json:"mode"`
 }
 
 //SDPResponse is json http response
 type SDPResponse struct {
-	SDP     string `json:"sdp"`
-	Success bool   `json:"success"`
-	Error   string `json:"error"`
+	SDP     webrtc.SessionDescription `json:"sdp"`
+	Success bool                      `json:"success"`
+	Error   string                    `json:"error"`
 }
 
 //Server is http server and engine wrapper
@@ -41,8 +41,7 @@ func (s *Server) HandleSDP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	offer := webrtc.SessionDescription{}
-	SDPDecode(req.SDP, &offer)
+	offer := req.SDP
 	var answer webrtc.SessionDescription
 	if req.Mode == RequestModePublisher {
 		answer, err = s.Engine.createPublisherPC(offer)
@@ -51,7 +50,7 @@ func (s *Server) HandleSDP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := SDPResponse{
-		SDP:     SDPEncode(&answer),
+		SDP:     answer,
 		Success: err == nil,
 	}
 	if err != nil {
