@@ -3,6 +3,7 @@ package sfu
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/pion/webrtc/v2"
@@ -16,8 +17,9 @@ const (
 
 //SDPRequest is json http request
 type SDPRequest struct {
-	SDP  webrtc.SessionDescription `json:"sdp"`
-	Mode string                    `json:"mode"`
+	SDP          webrtc.SessionDescription `json:"sdp"`
+	Mode         string                    `json:"mode"`
+	PublisherKey string                    `json:"publisherKey"`
 }
 
 //SDPResponse is json http response
@@ -38,15 +40,17 @@ func (s *Server) HandleSDP(w http.ResponseWriter, r *http.Request) {
 	var req SDPRequest
 	err := json.Unmarshal(body, &req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Invalid request payload: %s", body)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	log.Printf("New SDP request mode: %q, key: %q", req.Mode, req.PublisherKey)
 	offer := req.SDP
 	var answer webrtc.SessionDescription
 	if req.Mode == RequestModePublisher {
-		answer, err = s.Engine.createPublisherPC(offer)
+		answer, err = s.Engine.createPublisherPC(req.PublisherKey, offer)
 	} else {
-		answer, err = s.Engine.createViewerPC(offer)
+		answer, err = s.Engine.createViewerPC(req.PublisherKey, offer)
 	}
 
 	res := SDPResponse{
@@ -54,6 +58,7 @@ func (s *Server) HandleSDP(w http.ResponseWriter, r *http.Request) {
 		Success: err == nil,
 	}
 	if err != nil {
+		log.Printf("Response error: %+v", err)
 		res.Error = err.Error()
 	}
 

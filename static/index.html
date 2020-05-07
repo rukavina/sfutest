@@ -21,9 +21,13 @@
     <div class="col-sm-8">
       <div class="form-group" id="connectUI">
         <label for="signalingUrl">Signaling URL</label>
-        <input type="text" class="form-control" placeholder="Enter URL" id="signalingUrl" value="http://localhost:9090/sdp">        
-        <button class="btn btn-primary" onclick="sm.broadcast()"> Publish a Broadcast </button>
-        <button class="btn btn-primary" onclick="sm.watch()"> Join a Broadcast </button>                
+        <input type="text" class="form-control" placeholder="Enter URL" id="signalingUrl" value="http://localhost:9090/sdp">
+
+        <label for="publisherKey">Room Password</label>
+        <input type="text" class="form-control" placeholder="Enter URL" id="publisherKey" value="demo">
+        <br>
+        <button class="btn btn-primary" onclick="sm.broadcast(document.getElementById('publisherKey').value)"> Publish a Broadcast </button>
+        <button class="btn btn-primary" onclick="sm.watch(document.getElementById('publisherKey').value)"> Join a Broadcast </button>
       </div>
       <video id="video" width="600" height="480" autoplay muted></video>
     </div>
@@ -34,6 +38,7 @@
 </div>
 <script src="index.js"></script>
 <script>
+  document.getElementById('signalingUrl').value = window.location.href + 'sdp'
   let onConnected = function(){
     document.getElementById("connectUI").style="display:none"
   }

@@ -15,19 +15,19 @@ class SessionManager {
     this.onConnected = onConnected
   }
 
-  broadcast() {
+  broadcast(publisherKey) {
     let self = this
     navigator.mediaDevices.getUserMedia({ video: true, audio: false })
       .then(stream => {
         self.pc.addStream(self.videoEl.srcObject = stream)
-        self.offerSDP(true)
+        self.offerSDP(true, publisherKey)
       }).catch(err => self.log(err))    
   }
 
-  watch() {
+  watch(publisherKey) {
     let self = this
     this.pc.addTransceiver('video', { 'direction': 'recvonly' })
-    this.offerSDP(false)
+    this.offerSDP(false, publisherKey)
     this.pc.ontrack = function (event) {
       self.videoEl.srcObject = event.streams[0]
       self.videoEl.autoplay = true
@@ -40,10 +40,11 @@ class SessionManager {
     this.logEl.innerHTML += msg + "\n"
   }
 
-  postSDP(sdp, isPublisher, url = `http://localhost:9090/sdp`) {
+  postSDP(publisherKey, sdp, isPublisher, url) {
     let req = {
       'sdp': sdp,
       'mode': isPublisher ? 'publisher' : 'viewer',
+      'publisherKey': publisherKey,
     }
     return fetch(url, {
       method: 'POST',
@@ -54,12 +55,12 @@ class SessionManager {
     })
   }  
 
-  offerSDP(isPublisher) {
+  offerSDP(isPublisher, publisherKey) {
     let self = this
     this.pc.createOffer()
       .then(function (sdp) {
         self.pc.setLocalDescription(sdp)
-        self.postSDP(sdp, isPublisher, self.signalingUrlEl.value).then(res => res.json())
+        self.postSDP(publisherKey, sdp, isPublisher, self.signalingUrlEl.value).then(res => res.json())
           .then(response => {
             console.log("response:", response)
             if (response.success) {
